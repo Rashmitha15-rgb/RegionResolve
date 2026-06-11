@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Region-Resolve</title>
+<link rel="stylesheet" href="dashboard.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<style>
+  /* Centered 2-step popup modal */
+  .popup-overlay {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  .popup {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  }
+  .popup h3 {
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: #333;
+  }
+  .popup button {
+    margin: 5px 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .popup .confirm { background: #e74c3c; color: #fff; }
+  .popup .cancel { background: #bdc3c7; color: #000; }
+  .popup .confirm:hover { background: #c0392b; }
+  .popup .cancel:hover { background: #95a5a6; }
+</style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" style="display: none; width: 100%; display: flex;">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="nav-item active" data-tab="profile" data-title="Profile" onclick="switchTab('profile')">👤</div>
+    <div class="nav-item" data-tab="allpost" data-title="All posts" onclick="switchTab('allpost')">🗂️</div>
+    <div class="nav-item" data-tab="post" data-title="Post one" onclick="switchTab('post')">✏️</div>
+    <div class="nav-item" data-title="Go Home" onclick="goHome()">🏠</div>
+    <div class="nav-item" onclick="logout()"  data-title="Logout" style="margin-top: auto; color: var(--error);">🚪</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="topbar">
+      <div class="search-box">
+        <input type="text" placeholder="Search using district or region..." />
+        <span class="search-icon">🔍</span>
+      </div>
+      <div class="user-actions">
+        <span id="topbarUserName">Region-Resolve</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="profile-section">
+        <div class="profile-card">
+          <div class="profile-pic-container">
+            <img id="profilePic" class="profile-pic" 
+                 src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIxNSIgZmlsbD0iIzY2NiIvPjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS41IDM1IDYwIDUwIDYwUzgwIDY1LjUgODAgNzUiIGZpbGw9IiM2NjYiLz48L3N2Zz4=" 
+                 alt="Profile">
+          </div>
+          <div class="profile-info">
+            <h2 id="displayName">User:</h2>
+            <p>📧 <span id="userEmail">user@example.com</span></p>
+            <p>🆔 <span id="userUID">Loading...</span></p>
+            <p>👑 <span id="userRole">User</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-card">
+          <h3>Your Posts</h3>
+          <div id="userPosts">
+            <p>Loading your posts...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alertContainer"></div>
+
+<!-- Custom Centered 2-Step Popup -->
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup" id="popupBox">
+    <h3 id="popupMessage">Are you sure?</h3>
+    <button class="confirm" id="popupConfirm">Yes</button>
+    <button class="cancel" id="popupCancel">No</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+  authDomain: "major-project-d33e0.firebaseapp.com",
+  projectId: "major-project-d33e0",
+  storageBucket: "major-project-d33e0.firebasestorage.app",
+  messagingSenderId: "833100408662",
+  appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+  measurementId: "G-QYTJKF31RW"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const dashboard = document.getElementById("dashboard");
+const loadingOverlay = document.getElementById("loadingOverlay");
+const userPostsDiv = document.getElementById("userPosts");
+
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    await loadUserData(user);
+    await loadUserPosts(user.uid);
+    showDashboard();
+  } else {
+    window.location.href = "signin.html";
+  }
+});
+
+function showDashboard() {
+  loadingOverlay.style.display = "none";
+  dashboard.style.display = "flex";
+}
+
+async function loadUserData(user) {
+  try {
+    document.getElementById("userEmail").textContent = user.email;
+    document.getElementById("userUID").textContent = user.uid;
+
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (userData.name) {
+        document.getElementById("displayName").textContent = userData.name;
+        document.getElementById("topbarUserName").textContent = userData.name;
+      }
+      if (userData.role) {
+        document.getElementById("userRole").textContent = userData.role;
+      }
+    }
+  } catch (err) {
+    console.error("Error loading user data:", err);
+  }
+}
+
+function goHome() { window.location.href = "index.html"; }
+
+async function loadUserPosts(uid) {
+  try {
+    const snapshot = await db.collection("posts").where("userId", "==", uid).get();
+    if (snapshot.empty) {
+      userPostsDiv.innerHTML = "<p>No posts found.</p>";
+      return;
+    }
+
+    userPostsDiv.innerHTML = "";
+    snapshot.forEach(doc => {
+      const post = doc.data();
+      const postId = doc.id;
+      const postEl = document.createElement("div");
+      postEl.className = "post-item";
+      postEl.innerHTML = `
+       <div style="flex:1;">
+        <h4>${post.title}</h4>
+        <p>${post.description ? post.description.substring(0, 10) + (post.description.length > 10 ? "..." : "") : ""}</p>
+        <small>${post.district}, ${post.region}</small><br>
+        <small>Status: <strong>${post.status || "pending"}</strong></small>
+        <div style="margin-top:10px;">
+          <button class="delete-btn" data-id="${postId}">Delete</button>
+        </div>
+        </div>
+        ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" alt="Post Image">` : ""}
+      `;
+      userPostsDiv.appendChild(postEl);
+    });
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => handleDelete(e.target.getAttribute("data-id")));
+    });
+
+  } catch (err) {
+    console.error("Error loading posts:", err);
+    userPostsDiv.innerHTML = "<p>Error loading posts.</p>";
+  }
+}
+
+document.querySelector(".search-box input").addEventListener("input", function () {
+  const searchValue = this.value.trim().toLowerCase();
+  document.querySelectorAll(".post-item").forEach(item => {
+    const regionText = item.querySelector("small").textContent.toLowerCase();
+    item.style.display = regionText.includes(searchValue) ? "block" : "none";
+  });
+});
+
+async function logout() {
+  await auth.signOut();
+  window.location.href = "login.html";
+}
+
+function switchTab(tab) {
+  document.querySelectorAll(".nav-item").forEach((i) => i.classList.remove("active"));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
+  if (tab === "allpost") window.location.href = "all-postlocal.html";
+  if (tab === "post") window.location.href = "postformlatest.html";
+}
+
+function showAlert(message, type = "info") {
+  const alertContainer = document.getElementById("alertContainer");
+  const alert = document.createElement("div");
+  alert.className = `alert ${type}`;
+  alert.textContent = message;
+  alertContainer.appendChild(alert);
+  setTimeout(() => alert.classList.add("show"), 100);
+  setTimeout(() => {
+    alert.classList.remove("show");
+    setTimeout(() => alert.remove(), 300);
+  }, 3000);
+}
+
+// Centered 2-step delete popup
+const popupOverlay = document.getElementById("popupOverlay");
+const popupMessage = document.getElementById("popupMessage");
+const popupConfirm = document.getElementById("popupConfirm");
+const popupCancel = document.getElementById("popupCancel");
+let deleteId = null;
+let step = 1;
+
+function handleDelete(postId) {
+  deleteId = postId;
+  step = 1;
+  popupMessage.textContent = "Are you sure you want to delete this post?";
+  popupConfirm.textContent = "Yes";
+  popupOverlay.style.display = "flex";
+}
+
+popupConfirm.addEventListener("click", async () => {
+  if (step === 1) {
+    step = 2;
+    popupMessage.textContent = "This action is permanent and cannot be undone. Do you REALLY want to delete it?";
+    popupConfirm.textContent = "Delete";
+  } else if (step === 2) {
+    try {
+      await db.collection("posts").doc(deleteId).delete();
+      showAlert("Post deleted successfully!", "success");
+      await loadUserPosts(auth.currentUser.uid);
+    } catch (err) {
+      console.error("Delete error:", err);
+      showAlert("Error deleting post.", "error");
+    }
+    popupOverlay.style.display = "none";
+  }
+});
+
+popupCancel.addEventListener("click", () => {
+  popupOverlay.style.display = "none";
+});
+</script>
+</body>
+</html>

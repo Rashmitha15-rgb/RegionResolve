@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Region-Resolve</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" style="display: none; width: 100%; display: flex;">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-item active" data-tab="profile" data-title="Profile" onclick="switchTab('profile')">👤</div>
+      <div class="nav-item" data-tab="allpost" data-title="All Posts" onclick="switchTab('allpost')">🗂️</div>
+      <div class="nav-item" data-title="Go Home" onclick="goHome()">🏠</div>
+
+      <div class="nav-item" onclick="logout()" data-title="Logout" style="margin-top: auto; color: var(--error);">🚪</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+      <div class="topbar">
+        <div class="search-box">
+          <input type="text" placeholder="Search using district or region..." id="searchInput"/>
+          <span class="search-icon" id="searchIcon">🔍</span>
+        </div>
+        <div class="user-actions">
+          <span id="topbarUserName">Region-Resolve</span>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Profile Section (Left) -->
+        <div class="profile-section">
+          <div class="profile-card">
+            <div class="profile-pic-container">
+              <img id="profilePic" class="profile-pic" 
+                   src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIxNSIgZmlsbD0iIzY2NiIvPjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS41IDM1IDYwIDUwIDYwUzgwIDY1LjUgODAgNzUiIGZpbGw9IiM2NjYiLz48L3N2Zz4=" 
+                   alt="Profile">
+            </div>
+            <div class="profile-info">
+              <h2 id="displayName">User:</h2>
+              <p>📧 <span id="userEmail">user@example.com</span></p>
+              <p>🆔 <span id="userUID">Loading...</span></p>
+              <p>👑 <span id="userRole">User</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Posts Section (Right) -->
+        <div class="info-section">
+          <div class="info-card">
+            <h3>Posts in Your Area</h3>
+            <div id="userPosts">
+              <p>Loading posts...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Container -->
+  <div id="alertContainer"></div>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+      apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+    authDomain: "major-project-d33e0.firebaseapp.com",
+    projectId: "major-project-d33e0",
+    storageBucket: "major-project-d33e0.firebasestorage.app",
+    messagingSenderId: "833100408662",
+    appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+    measurementId: "G-QYTJKF31RW"
+
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const dashboard = document.getElementById("dashboard");
+  const loadingOverlay = document.getElementById("loadingOverlay");
+  const userPostsDiv = document.getElementById("userPosts");
+
+  // Check if user is logged in
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      const userData = await loadUserData(user);
+      await loadUserPosts(userData);
+      showDashboard();
+    } else {
+      window.location.href = "signin.html";
+    }
+  });
+
+  function goHome() {
+  window.location.href = "index.html";  // ← change to your real home page
+}
+
+  function showDashboard() {
+    loadingOverlay.style.display = "none";
+    dashboard.style.display = "flex";
+  }
+
+  // Load user data
+  async function loadUserData(user) {
+    try {
+      document.getElementById("userEmail").textContent = user.email;
+      document.getElementById("userUID").textContent = user.uid;
+
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      let userData = {};
+      if (userDoc.exists) {
+        userData = userDoc.data();
+        if (userData.name) {
+          document.getElementById("displayName").textContent = userData.name;
+          document.getElementById("topbarUserName").textContent = userData.name;
+        }
+        if (userData.role) {
+          document.getElementById("userRole").textContent = userData.role;
+        }
+      }
+      return userData;
+    } catch (err) {
+      console.error("Error loading user data:", err);
+      return {};
+    }
+  }
+
+  // Load posts with same district or region
+  async function loadUserPosts(userData) {
+    try {
+      if (!userData.district && !userData.region) {
+        userPostsDiv.innerHTML = "<p>No district/region info found in your profile.</p>";
+        return;
+      }
+
+      let posts = [];
+      const snapshot = await db.collection("posts").get();
+
+      snapshot.forEach(doc => {
+        const post = doc.data();
+        if ((
+          (userData.district && post.district === userData.district) ||
+          (userData.region && post.region === userData.region)
+        ) &&
+        (post.status === "pending" || post.status === "replied")
+      ){
+          posts.push({ id: doc.id, ...post });
+        }
+      });
+
+      if (posts.length === 0) {
+        userPostsDiv.innerHTML = "<p>No posts found in your area.</p>";
+        return;
+      }
+
+      userPostsDiv.innerHTML = "";
+      posts.forEach(post => {
+        const postEl = document.createElement("div");
+        postEl.className = "post-item";
+        postEl.innerHTML = `
+        <div style="flex:1;">
+          <h4>${post.title}</h4>
+          <p>${post.description ? post.description.substring(0, 50) + (post.description.length > 50 ? "..." : "") : ""}</p>
+          <small>📍 ${post.district || ""}, ${post.region || ""}</small><br>
+          <small>Status: <strong>${post.status || "pending"}</strong></small>
+          </div>
+           ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image">` : ""}
+        `;
+        userPostsDiv.appendChild(postEl);
+      });
+
+    } catch (err) {
+      console.error("Error loading posts:", err);
+      userPostsDiv.innerHTML = "<p>Error loading posts.</p>";
+    }
+  }
+
+  // Search filter (by district/region)
+  document.getElementById("searchInput").addEventListener("input", function () {
+    const searchValue = this.value.trim().toLowerCase();
+    document.querySelectorAll(".post-item").forEach(item => {
+      const district = item.querySelector("small").textContent.toLowerCase(); 
+      const region   = item.querySelector("small").textContent.toLowerCase();
+      item.style.display = (district.includes(searchValue) || region.includes(searchValue))
+        ? "block" 
+        : "none";
+    });
+  });
+
+  // Logout
+  async function logout() {
+    await auth.signOut();
+    window.location.href = "signin.html";
+  }
+
+  // Switch tab
+  function switchTab(tab) {
+    document.querySelectorAll(".nav-item").forEach((i) => i.classList.remove("active"));
+    document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
+    if (tab === "allpost") {
+      window.location.href = "all-postlatest.html";
+    }
+  }
+
+  // Alerts
+  function showAlert(message, type = "info") {
+    const alertContainer = document.getElementById("alertContainer");
+    const alert = document.createElement("div");
+    alert.className = `alert ${type}`;
+    alert.textContent = message;
+    alertContainer.appendChild(alert);
+    setTimeout(() => alert.classList.add("show"), 100);
+    setTimeout(() => {
+      alert.classList.remove("show");
+      setTimeout(() => alert.remove(), 300);
+    }, 3000);
+  }
+</script>
+
+</body>
+</html>

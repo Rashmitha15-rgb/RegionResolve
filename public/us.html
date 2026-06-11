@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Developers - Region Resolve</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Poppins, sans-serif;
+    }
+
+    body {
+      background: url("bg.jpg") center/cover no-repeat;
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: white;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+      color: #ffda77;
+      text-shadow: 0 0 10px rgba(0,0,0,0.4);
+      animation: fadeDown 1s ease;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .team-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 20px;
+      animation: fadeUp 1.1s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .team-card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border-radius: 18px;
+      padding: 25px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      transition: 0.3s ease-in-out;
+    }
+
+    .team-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 15px 40px rgba(255, 218, 119, 0.35);
+    }
+
+    .profile-img {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 3px solid #ffda77;
+      object-fit: cover;
+      margin-bottom: 15px;
+    }
+
+    .name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #ffda77;
+    }
+
+    .role {
+      font-size: 14px;
+      margin: 5px 0 10px;
+      color: #f2f2f2;
+    }
+
+    .bio {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #e8e8e8;
+      margin-bottom: 12px;
+    }
+
+    .socials i {
+      font-size: 20px;
+      margin: 8px;
+      color: #ffda77;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .socials i:hover {
+      transform: scale(1.2);
+      color: white;
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 10px;
+      border-radius: 50%;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+
+    .back-btn:hover {
+      background: #ffda77;
+      color: black;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <a href="index.html" class="back-btn"><i class="fa fa-arrow-left"></i></a>
+
+  <h1>Meet Our Developers</h1>
+
+  <div class="team-container">
+
+    <!-- Developer 1 -->
+    <div class="team-card">
+      <img src="dev1.jpg" class="profile-img">
+      <div class="name">Pratheeksha P</div>
+      <div class="role">+91 8618667399</div>
+      <div class="bio">CSE student with interest in technology, problem-solving and building practical solutions.</div>
+
+      <div class="socials">
+       <a href="https://mail.google.com/mail/?view=cm&fs=1&to=pratheekshap837@gmail.com.com" target="_blank"> <i class="fa-solid fa-envelope"></i></a>
+     <a href="https://www.linkedin.com/in/pratheeksha-p-b382122a1/" target="_blank"><i class="fab fa-linkedin"></i></a>
+       <a href="https://github.com/Pratheeksha8" target="_blank"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+
+    <!-- Developer 2 -->
+    <div class="team-card">
+      <img src="dev2.jpg" class="profile-img">
+      <div class="name">Rashmitha</div>
+      <div class="role">+91 8073358537</div>
+      <div class="bio">CSE student passionate about learning new technologies and contributing to effective project development and teamwork.</div>
+
+      <div class="socials">
+       <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rashmithapoojari3@gmail.com" target="_blank"> <i class="fa-solid fa-envelope"></i></a>
+       <a href="http://linkedin.com/in/rashmitha-poojary-429148358" target="_blank"> <i class="fab fa-linkedin"></i></a>
+        <a href="https://github.com/Rashmitha15-rgb " target="_blank"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+
+    <!-- Developer 3 -->
+    <div class="team-card">
+      <img src="dev3.jpg" class="profile-img">
+      <div class="name">Tilak Raj S J</div>
+      <div class="role">+91 7411006242</div>
+      <div class="bio">CSE student exploring the world of coding and technology.Always eager to learn and build new things</div>
+
+      <div class="socials">
+       <a href="https://mail.google.com/mail/?view=cm&fs=1&to=thilakraj67411@gmail.com" target="_blank"></a> <i class="fa-solid fa-envelope"></i></a>
+       <a href="https://www.linkedin.com/in/thilakraj-s-j-8849972a0" target="_blank"> <i class="fab fa-linkedin"></i></a>
+        <a href="https://github.com/thilakraj7" target="_blank"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+
+    <!-- Developer 3 -->
+    <div class="team-card">
+      <img src="dev4.jpg" class="profile-img">
+      <div class="name">Punyashree Bhandary</div>
+      <div class="role">+91 6366089636</div>
+      <div class="bio">CSE student with focused on understanding core development concepts and improving through practice</div>
+
+      <div class="socials">
+       <a href="https://mail.google.com/mail/?view=cm&fs=1&to=punyashree974@gmail.com" target="_blank"> <i class="fa-solid fa-envelope"></i></a>
+       <a href="https://www.linkedin.com/in/punya-shree-3291bb2a1" target="_blank"> <i class="fab fa-linkedin"></i></a>
+       <a href="https://github.com/punyashree45" target="_blank"> <i class="fab fa-github"></i></a>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

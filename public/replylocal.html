@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reply - Region Resolve</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="reply.css">
+</head>
+<body>
+
+  <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+ <div class="scroll-container">
+  <nav class="navigation">
+    <div class="nav-content">
+      <a href="javascript:void(0)" class="back-button" onclick="handleBackNavigation()">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+      <div class="page-title">Region Resolve - Reply System</div>
+      <div class="breadcrumb">
+        <div class="breadcrumb-item"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="breadcrumb-item"> <i class="fas fa-chevron-right"></i><span>Posts</span></div>
+        <div class="breadcrumb-item"><i class="fas fa-chevron-right"></i><span>Reply</span></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card post-header">
+      <h2 style="margin-bottom: 1rem; color: var(--text-secondary);">
+        <i class="fas fa-reply"></i> Replying to:
+      </h2>
+      <div class="post-title" id="postTitle">Loading post...</div>
+      <div class="post-details" id="postDetails"></div>
+    </div>
+
+    <!-- Only "View Replies" kept -->
+    <div class="card option-selector" id="optionSelector">
+      <h3><i class="fas fa-question-circle"></i> You are on the way</h3>
+      <div class="option-buttons">
+        <button class="option-btn" onclick="showReplies()">
+          <i class="fas fa-comments"></i> View Replies
+        </button>
+      </div>
+    </div>
+
+    <!-- Replies section -->
+    <div class="card replies-section" id="repliesSection" style="display:none;">
+      <div class="replies-header">
+        <h3><i class="fas fa-comments"></i> Official Replies</h3>
+        <p style="color: var(--text-muted);">Responses from government officials</p>
+      </div>
+      <div id="repliesContainer" class="loading">Loading replies...</div>
+    </div>
+  </div>
+
+  <div id="customAlert" class="custom-alert"></div>
+</div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+       apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+    authDomain: "major-project-d33e0.firebaseapp.com",
+    projectId: "major-project-d33e0",
+    storageBucket: "major-project-d33e0.firebasestorage.app",
+    messagingSenderId: "833100408662",
+    appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+    measurementId: "G-QYTJKF31RW"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let currentPostId = null;
+    let currentPost = null;
+
+    function updateProgress(percent) {
+      document.getElementById("progressBar").style.width = percent + "%";
+    }
+
+    function showAlert(message, type="info") {
+      const alertBox = document.getElementById("customAlert");
+      alertBox.innerHTML =
+        `<div style="display:flex;align-items:center;gap:0.5rem;">
+            <i class="fas ${type==="success"?"fa-check-circle":
+              type==="error"?"fa-exclamation-triangle":"fa-info-circle"}"></i>
+            <span>${message}</span>
+        </div>`;
+      alertBox.className = `custom-alert ${type} show`;
+      setTimeout(()=>alertBox.classList.remove("show"),4000);
+    }
+
+    function handleBackNavigation() {
+      window.history.back();
+    }
+
+    function getPostIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
+
+    async function loadPostDetails() {
+      updateProgress(30);
+      currentPostId = getPostIdFromUrl();
+      if(!currentPostId){
+        showAlert("No Post ID in URL!", "error"); 
+        return;
+      }
+
+      try {
+        const postDoc = await db.collection("posts")
+                                .doc(currentPostId).get();
+
+        if(!postDoc.exists){ 
+          showAlert("Post not found!","error"); 
+          return;
+        }
+
+        currentPost = postDoc.data();
+        document.getElementById("postTitle").textContent =
+          currentPost.title || "Untitled";
+
+        document.getElementById("postDetails").innerHTML = `
+          <div class="detail-item"><div class="detail-label"><i class="fas fa-align-left"></i> Description</div><div class="detail-value">${currentPost.description||"No description"}</div></div>
+          <div class="detail-item"><div class="detail-label"><i class="fas fa-map-marker-alt"></i> Region</div><div class="detail-value">${currentPost.region||"Not specified"}</div></div>
+          <div class="detail-item"><div class="detail-label"><i class="fas fa-city"></i> District</div><div class="detail-value">${currentPost.district||"Not specified"}</div></div>
+          <div class="detail-item"><div class="detail-label"><i class="fas fa-info-circle"></i> Status</div><div class="detail-value">${currentPost.status||"Pending"}</div></div>
+        `;
+
+        updateProgress(100);
+
+      } catch(e){
+        console.error(e);
+        showAlert("Error loading post","error");
+      }
+    }
+
+    // ONLY THIS FUNCTION IS USED
+    function showReplies(){
+      document.getElementById("repliesSection").style.display = "block";
+      loadReplies();
+    }
+
+    async function loadReplies(){
+      const container = document.getElementById("repliesContainer");
+      container.className="loading";
+      container.textContent="Loading replies...";
+
+      try{
+        const snapshot = await db.collection("posts")
+                                 .doc(currentPostId)
+                                 .collection("replies")
+                                 .orderBy("createdAt","desc")
+                                 .get();
+
+        if(snapshot.empty){
+          container.className="no-replies";
+          container.textContent="No replies yet";
+          return;
+        }
+
+        container.className="";
+        container.innerHTML="";
+
+        for(const doc of snapshot.docs){
+          const r = doc.data();
+          const date = r.createdAt?.toDate().toLocaleString() || "Unknown";
+
+          // Fetch email from officialids
+          let email = r.officialId;
+          const o = await db.collection("officialids")
+                            .doc(r.officialId).get();
+          if(o.exists) email = o.data().email || r.officialId;
+
+          // Fetch designation from users
+          let designation = "Unknown";
+          const u = await db.collection("users")
+                            .doc(r.officialId).get();
+          if(u.exists) designation = u.data().designation || "Not specified";
+
+          container.innerHTML += `
+            <div class="reply-card">
+              <div class="reply-header">
+                <div class="official-info">
+                  <div class="official-main">
+                    <span class="official-badge">Official</span>
+                    <span class="official-email">${email}</span>
+                    <span class="official-designation">(${designation})</span>
+                  </div>
+                  <div class="official-location">
+                    <i class="fas fa-map-marker-alt"></i>
+                    ${currentPost.region||""}, ${currentPost.district||""}
+                  </div>
+                </div>
+                <div class="reply-date">${date}</div>
+              </div>
+              <div class="reply-content">${r.content}</div>
+            </div>`;
+        }
+
+      } catch(e){
+        console.error(e);
+        showAlert("Error loading replies","error");
+      }
+    }
+
+    window.onload = loadPostDetails;
+  </script>
+</body>
+</html>

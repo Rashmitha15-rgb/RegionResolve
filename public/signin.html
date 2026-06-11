@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Region Resolve</title>
+  <link rel="stylesheet" href="signin.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Firebase SDKs (Latest Compat Version) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+   <a href="index.html" class="back-arrow"><i class="fa fa-arrow-left"></i></a>
+  <div class="signup-container">
+    <!-- Left Card -->
+    <div class="left-card">
+      <div class="card-content">
+        <span class="card-title">REGION RESOLVE</span>
+        <h2>Welcome Back!</h2>
+        <p>Log in to continue making your community stronger and brighter.</p>
+        <p class="signin-text">New here? <a href="signup.html">Sign Up</a></p>
+      </div>
+    </div>
+
+    <!-- Right Login Form -->
+    <div class="right-form">
+      <h1>Login to Your Account</h1>
+      <form id="login-form">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" class="password-field" placeholder="Enter password" required>
+
+        <div class="show-password">
+          <input type="checkbox" id="show-password">
+          <label for="show-password">Show password</label>
+        </div>
+
+        <button type="submit" class="signup-btn">Login →</button>
+      </form>
+
+      
+    </div>
+  </div>
+
+  <!-- Notification Popup -->
+  <div id="overlay" style="display:none;">
+    <div id="message-box">
+      <h3 id="msg-title"></h3>
+      <p id="msg-text"></p>
+      <button onclick="closeMessage()">OK</button>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+     apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+    authDomain: "major-project-d33e0.firebaseapp.com",
+    projectId: "major-project-d33e0",
+    storageBucket: "major-project-d33e0.firebasestorage.app",
+    messagingSenderId: "833100408662",
+    appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+    measurementId: "G-QYTJKF31RW"
+
+
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Elements for Popup Messages
+    const overlay = document.getElementById("overlay");
+    const msgTitle = document.getElementById("msg-title");
+    const msgText = document.getElementById("msg-text");
+
+    // Show Message Function
+    function showMessage(msg, isError = false) {
+      overlay.style.display = "flex";
+      msgTitle.innerText = isError ? "Error" : "Success";
+      msgText.innerText = msg;
+      const box = document.getElementById("message-box");
+      box.classList.remove("error", "success");
+      box.classList.add(isError ? "error" : "success");
+    }
+
+    // Close Message Function
+    function closeMessage() {
+      overlay.style.display = "none";
+    }
+
+    // Format Firebase Error Messages
+    function formatFirebaseError(error) {
+      if (error.code === "auth/user-not-found") return "Sorry, no account found with this email address.";
+      if (error.code === "auth/wrong-password") return "Sorry, the password you entered is incorrect.";
+      if (error.code === "auth/invalid-email") return "Please enter a valid email address.";
+      if (error.code === "auth/email-already-in-use") return "This email is already linked to another account.";
+      if (error.code === "auth/network-request-failed") return "Network error. Please check your internet connection.";
+      if (error.code === "auth/popup-closed-by-user") return "Login process was cancelled. Please try again.";
+      if (error.code === "auth/invalid-credential") return "Sorry, your credentials are invalid or expired. Please try again.";
+      if (error.code === "auth/too-many-requests") return "Too many login attempts. Please try again later.";
+      if (error.code === "auth/user-disabled") return "This account has been disabled. Please contact support.";
+      return "Something went wrong. Please try again later.";
+    }
+
+    // Show/Hide Password Toggle
+    const showPassword = document.getElementById('show-password');
+    const passwordInput = document.getElementById('password');
+    showPassword.addEventListener('change', () => {
+      passwordInput.type = showPassword.checked ? 'text' : 'password';
+    });
+
+    // ✅ Email Login with Role Check
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = passwordInput.value;
+
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        const userDoc = await db.collection("users").doc(user.uid).get();
+
+        if (userDoc.exists) {
+          const role = (userDoc.data().role || "citizen").toLowerCase();  // ✅ CHANGE: force lowercase for safety
+          showMessage("Login successful! Redirecting...");
+          setTimeout(() => {
+            if (role === "citizen") {  // ✅ CHANGE: lowercase check
+              window.location.href = "local-dashboard.html";
+            } else {
+              window.location.href = "official-dashboard.html";
+            }
+          }, 1200);
+        } else {
+          showMessage("User data not found!", true);
+        }
+      } catch (error) {
+        showMessage(formatFirebaseError(error), true);
+      }
+    });
+
+  
+  </script>
+</body>
+</html>

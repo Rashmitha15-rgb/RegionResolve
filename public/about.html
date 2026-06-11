@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>region-resolve</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: url("bg.jpg") no-repeat center center/cover;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      width: 90%;
+      max-width: 1000px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      animation: slideUp 1.2s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .left {
+      flex: 1;
+      background: black;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      position: relative;
+    }
+
+    .left h2 {
+      font-size: 28px;
+      margin-bottom: 15px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .left p {
+      line-height: 1.7;
+      color: #ddd;
+      margin-bottom: 20px;
+      z-index: 2;
+    }
+
+    .socials i {
+      margin: 10px;
+      font-size: 20px;
+      cursor: pointer;
+      color: #ffda77;
+      transition: 0.3s;
+    }
+
+    .socials i:hover {
+      transform: scale(1.3);
+      color: #fff;
+    }
+
+    .right {
+      flex: 2;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.2);
+      position: relative;
+    }
+
+    .right h2 {
+      font-size: 26px;
+      margin-bottom: 15px;
+      animation: fadeIn 2s ease;
+    }
+
+    .right p {
+      line-height: 1.8;
+      color: #f5f5f5;
+      margin-bottom: 25px;
+      animation: fadeIn 2s ease 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn {
+      background: #ffda77;
+      color: #000;
+      padding: 12px 25px;
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: bold;
+      transition: 0.3s;
+      text-align: center;
+      width: fit-content;
+      animation: fadeIn 2s ease 1s;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #fff;
+      color: #ff4b2b;
+      transform: scale(1.1);
+    }
+
+    /* Floating shapes */
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: float 6s infinite ease-in-out alternate;
+    }
+
+    .shape1 { width: 100px; height: 100px; background: #ffda77; top: 10%; left: 5%; }
+    .shape2 { width: 150px; height: 150px; background: #fff; bottom: 10%; right: 5%; }
+
+    @keyframes float {
+      from { transform: translateY(0); }
+      to { transform: translateY(-30px); }
+    }
+
+    /* Back arrow */
+    .back-arrow {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      color: white;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 10px;
+      border-radius: 50%;
+      text-decoration: none;
+      transition: 0.3s;
+      z-index: 10000;
+    }
+
+    .back-arrow:hover {
+      background: #ffda77;
+      color: black;
+    }
+
+    .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+
+  .modal.show {
+    display: flex;
+    animation: fadeInModal 0.4s ease;
+  }
+
+  @keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-content {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 25px;
+    border-radius: 20px;
+    max-width: 420px;
+    width: 80%;
+    text-align: center;
+    transform: scale(0.7);
+    animation: scaleUp 0.4s ease forwards;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    text-align: justify;
+
+  }
+
+  @keyframes scaleUp {
+    to { transform: scale(1); }
+  }
+
+  .modal-content h3 {
+    margin-bottom: 15px;
+    color: #ffda77;
+    font-size: 22px;
+      text-align: center;
+  }
+
+  .modal-content p {
+    line-height: 1.6;
+    color: #f5f5f5;
+    font-size: 15px;
+  }
+
+  .close-btn {
+    background: #ffda77;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    margin: 20px auto 0;
+    font-weight: bold;
+    transition: 0.3s;
+      text-align: center;
+       display: block;  
+  }
+
+  .close-btn:hover {
+    background: #fff;
+    color: #ff4b2b;
+    transform: scale(1.05);
+  }
+
+/* ===================== RESPONSIVE ===================== */
+
+/* Tablets */
+@media (max-width: 1024px) {
+  body {
+    height: auto;
+    overflow-y: auto;
+    padding: 60px 0;
+  }
+
+  .container {
+    flex-direction: column;
+    width: 95%;
+    max-width: 900px;
+    transform: scale(1);
+  }
+
+  .left, .right {
+    width: 100%;
+    padding: 40px 30px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .left h2, .right h2 {
+    font-size: 28px;
+  }
+
+  .shape1, .shape2 {
+    transform: scale(0.9);
+    opacity: 0.25;
+  }
+}
+
+/* Phones */
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    overflow-y: auto;
+    padding: 50px 0;
+  }
+
+  .container {
+    flex-direction: column;
+    max-width: 820px;
+    transform: scale(1.05); /* slightly enlarged look */
+    transform-origin: top center;
+  }
+
+  .left, .right {
+    width: 100%;
+    padding: 35px 25px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .left h2, .right h2 {
+    font-size: 26px;
+  }
+
+  .left p, .right p {
+    font-size: 16px;
+    line-height: 1.8;
+    text-align: justify;
+  }
+
+  .btn {
+    margin: 20px auto 0;
+  }
+
+  .socials {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .shape1, .shape2 {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+
+  .back-arrow {
+    font-size: 20px;
+    top: 15px;
+    left: 15px;
+    padding: 6px 8px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  body {
+    height: auto;
+    overflow-y: auto;
+    padding: 40px 0;
+  }
+
+  .container {
+    max-width: 780px;
+    transform: scale(1);
+  }
+
+  .left, .right {
+    padding: 25px 20px;
+  }
+
+  .left h2, .right h2 {
+    font-size: 22px;
+  }
+
+  .left p, .right p {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .btn {
+    font-size: 15px;
+    padding: 10px 22px;
+  }
+
+  .modal-content {
+    width: 90%;
+    font-size: 14px;
+    padding: 20px;
+    transform: scale(1);
+  }
+
+  .shape1, .shape2 {
+    display: none; /* hides distracting shapes on small screens */
+  }
+}
+
+
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-arrow"><i class="fa fa-arrow-left"></i></a>
+  <div class="container">
+    <div class="left">
+      <div class="shape shape1"></div>
+     <h2>About Us</h2>
+<p>
+  Region Resolve is a platform designed to bridge the gap between citizens and local authorities.  
+  Our mission is to make civic engagement simple and impactful,helping every voice be heard and every problem find a resolution.
+</p>
+
+      <div class="socials">
+        <a href="https://instagram.com" target="_blank"> <i class="fab fa-instagram"></i></a>
+         <a href="https://twitter.com" target="_blank"><i class="fab fa-twitter"></i></a>
+         <a href="https://linkedin.com" target="_blank"><i class="fab fa-linkedin"></i></a>
+      </div>
+    </div>
+    <div class="right">
+      <div class="shape shape2"></div>
+      <h2>Who We Are</h2>
+      <p>We are a team of dreamers, designers, and developers working together to craft digital experiences that make a difference. From concept to creation, we love what we do.</p>
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+      <a class="btn" id="learnMoreBtn">Learn More</a>
+       <a class="btn" href="us.html" id="knowUsBtn">Know Us</a>
+    </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="rulesModal">
+    <div class="modal-content">
+      <h3>our community</h3>
+    
+<p>
+  1. Users must register before posting. Anonymous posting is allowed, but all user details will be stored securely for legal concerns.<br>
+  2. Users must ensure the information they post is accurate and truthful. Legal action may be taken for false or misleading information.<br>
+  3. Respect all users and maintain professionalism while reporting or replying to problems.<br>
+  4. Spamming or misuse of the platform is strictly prohibited.<br>
+  5. The platform is intended to help authorities identify and resolve community issues faster, so cooperation and responsibility are expected from all users.<br>
+   6. Privacy & Terms: Your data will be secured at all times. If you choose to post anonymously, your email will still be stored in the database for legal concerns but will not be shown publicly.
+</p>
+
+      <button class="close-btn" id="closeModal">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("rulesModal");
+    const learnMoreBtn = document.getElementById("learnMoreBtn");
+    const closeModal = document.getElementById("closeModal");
+
+    learnMoreBtn.onclick = () => {
+      modal.classList.add("show");
+    }
+
+    closeModal.onclick = () => {
+      modal.classList.remove("show");
+    }
+
+    window.onclick = (e) => {
+      if (e.target === modal) {
+        modal.classList.remove("show");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Region Resolve</title>
+  <link rel="stylesheet" href="style1.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .verification-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+    .verification-modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .verification-modal-content h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .verification-modal-content label {
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    .verification-modal-content input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .verification-modal-content button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+    }
+    .verification-modal-content button:hover {
+      background: #45a049;
+    }
+    .close-verification {
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      color: #aaa;
+      cursor: pointer;
+    }
+    .close-verification:hover {
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+   <a href="index.html" class="back-arrow"><i class="fa fa-arrow-left"></i></a>
+  <div class="signup-container">
+    <div class="left-card">
+      <div class="card-content">
+        <div class="card-title">REGION RESOLVE</div>
+        <h2>Stronger Communities, Brighter Futures.</h2>
+        <p>Join our platform to report local issues and help authorities respond faster.</p>
+        <p class="signin-text">Already have an account? <a href="signin.html">Sign in</a></p>
+      </div>
+    </div>
+
+    <div class="right-form">
+      <h1>Create Account</h1>
+      <form id="signupForm">
+        <label>Email address</label>
+        <input type="email" id="email" placeholder="Enter your email" required />
+
+        <label>Set password</label>
+        <input type="password" id="password" placeholder="Enter password" required />
+        <div class="show-password">
+          <input type="checkbox" id="showPass">
+          <label for="showPass">Show password</label>
+        </div>
+
+        <label>Select your role</label>
+        <select id="role" required>
+          <option value="">-- Select Role --</option>
+          <option value="Citizen">Citizen</option>
+          <option value="Official">Official</option>
+        </select>
+
+        <!-- Dynamic Designation Input -->
+        <div id="designationField" style="display:none;">
+          <label>Enter Designation</label>
+          <input type="text" id="designation" placeholder="Enter your designation" />
+          <label>Enter Region</label>
+          <input type="text" id="region" placeholder="Enter your region" />
+          <label>Enter District</label>
+          <input type="text" id="district" placeholder="Enter your district" />
+        </div>
+
+        <button type="submit" class="signup-btn">Sign up →</button>
+      </form>
+      <p id="errorMsg"></p>
+      <p id="successMsg"></p>
+    </div>
+  </div>
+
+  <!-- Verification Modal for Officials -->
+  <div id="verificationModal" class="verification-modal">
+    <div class="verification-modal-content">
+      <span class="close-verification" id="closeVerification">&times;</span>
+      <h2>Official Verification Required</h2>
+      <p>Please provide additional information for verification:</p>
+      <form id="verificationForm">
+        <label>Full Name *</label>
+        <input type="text" id="verifyName" required />
+        
+        <label>Official Phone Number *</label>
+        <input type="tel" id="verifyPhone" required />
+        
+        <label>Designation *</label>
+        <input type="text" id="verifyDesignation" required />
+        
+        <label>Region *</label>
+        <input type="text" id="verifyRegion" required />
+        
+        <label>District *</label>
+        <input type="text" id="verifyDistrict" required />
+        
+        <button type="submit">Submit for Verification</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Overlay and Modal -->
+  <div id="overlay" class="overlay">
+    <div id="messageBox" class="message-box">
+      <h3 id="messageTitle"></h3>
+      <p id="messageText"></p>
+      <button id="okButton">OK</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+    if (getApps().length > 0) {
+      await deleteApp(getApps()[0]);
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+      authDomain: "major-project-d33e0.firebaseapp.com",
+      projectId: "major-project-d33e0",
+      storageBucket: "major-project-d33e0.firebasestorage.app",
+      messagingSenderId: "833100408662",
+      appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+      measurementId: "G-QYTJKF31RW"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let pendingOfficialData = null;
+
+    function friendlyErrorMessage(code) {
+      switch (code) {
+        case "auth/email-already-in-use": return "This email is already registered. Please sign in instead.";
+        case "auth/invalid-email": return "Please enter a valid email address.";
+        case "auth/weak-password": return "Password is too weak. Please choose a stronger one.";
+        default: return "An unexpected error occurred. Please try again.";
+      }
+    }
+
+    function showMessage(title, message, type, redirect = false) {
+      document.getElementById("messageTitle").innerText = title;
+      document.getElementById("messageText").innerText = message;
+      const messageBox = document.getElementById("messageBox");
+      messageBox.className = "message-box " + type;
+      document.getElementById("overlay").style.display = "flex";
+
+      document.getElementById("okButton").onclick = function () {
+        document.getElementById("overlay").style.display = "none";
+
+        if (type === "success") {
+          document.getElementById("signupForm").reset();
+          document.getElementById("designationField").style.display = "none";
+        }
+
+        if (redirect) {
+          window.location.href = "signin.html";
+        }
+      };
+    }
+
+    document.getElementById("showPass").addEventListener("change", function() {
+      const passwordField = document.getElementById("password");
+      passwordField.type = this.checked ? "text" : "password";
+    });
+
+    document.getElementById("role").addEventListener("change", function() {
+      document.getElementById("designationField").style.display = this.value === "Official" ? "block" : "none";
+    });
+
+    document.getElementById("closeVerification").addEventListener("click", function() {
+      document.getElementById("verificationModal").style.display = "none";
+    });
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const role = document.getElementById("role").value;
+      const designation = document.getElementById("designation").value.trim();
+      const region = document.getElementById("region").value.trim();
+      const district = document.getElementById("district").value.trim();
+
+      if (role === "Official") {
+        // Check if already in verified list
+        try {
+          const verificationDoc = await getDoc(doc(db, "verifiedListOfOfficials", email));
+          
+          if (verificationDoc.exists()) {
+            const verificationData = verificationDoc.data();
+            
+            if (verificationData.approved === true) {
+              // Approved - proceed with registration
+              try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const userId = user.uid;
+
+                await setDoc(doc(db, "users", userId), {
+                  userId,
+                  email,
+                  role: "Official",
+                  designation: designation,
+                  region: region,
+                  district: district,
+                  createdAt: new Date()
+                });
+
+                await setDoc(doc(db, "officialids", userId), { userId, email });
+
+                showMessage("Success", `Account created successfully! Your Unique ID: ${userId}`, "success", true);
+
+              } catch (error) {
+                console.error("Signup error:", error);
+                showMessage("Error", friendlyErrorMessage(error.code), "error");
+              }
+            } else {
+              // Not approved yet
+              showMessage("Verification Pending", "Your verification request is pending admin approval. You'll get a call for verification.", "info");
+            }
+          } else {
+            // Not in verified list - show verification modal
+            pendingOfficialData = { email, password, role, designation, region, district };
+            document.getElementById("verificationModal").style.display = "flex";
+          }
+        } catch (error) {
+          console.error("Check verification error:", error);
+          showMessage("Error", "Error checking verification status. Please try again.", "error");
+        }
+        return;
+      }
+
+      // Citizen registration (unchanged)
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userId = user.uid;
+
+        await setDoc(doc(db, "users", userId), {
+          userId,
+          email,
+          role,
+          designation: null,
+          region: null,
+          district: null,
+          createdAt: new Date()
+        });
+
+        await setDoc(doc(db, "localids", userId), { userId, email });
+
+        showMessage("Success", `Account created successfully! Your Unique ID: ${userId}`, "success", true);
+
+      } catch (error) {
+        console.error("Signup error:", error);
+        showMessage("Error", friendlyErrorMessage(error.code), "error");
+      }
+    });
+
+    document.getElementById("verificationForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById("verifyName").value.trim();
+      const phone = document.getElementById("verifyPhone").value.trim();
+      const designation = document.getElementById("verifyDesignation").value.trim();
+      const region = document.getElementById("verifyRegion").value.trim();
+      const district = document.getElementById("verifyDistrict").value.trim();
+
+      try {
+        // Only save to verifiedListOfOfficials - DO NOT create user account yet
+        await setDoc(doc(db, "verifiedListOfOfficials", pendingOfficialData.email), {
+          email: pendingOfficialData.email,
+          name: name,
+          phone: phone,
+          designation: designation,
+          region: region,
+          district: district,
+          approved: false,
+          submittedAt: new Date()
+        });
+
+        const formData = new FormData();
+        formData.append("email", pendingOfficialData.email);
+        formData.append("name", name);
+        formData.append("phone", phone);
+        formData.append("designation", designation);
+        formData.append("region", region);
+        formData.append("district", district);
+
+        await fetch("https://formspree.io/f/xjklplng", {
+          method: "POST",
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        });
+
+        document.getElementById("verificationModal").style.display = "none";
+        showMessage("Success", `Verification request submitted! You'll receive an email once approved. Then you can complete your registration.`, "success");
+
+      } catch (error) {
+        console.error("Verification submit error:", error);
+        document.getElementById("verificationModal").style.display = "none";
+        showMessage("Error", "Failed to submit verification request. Please try again.", "error");
+      }
+    });
+  </script>
+</body>
+</html>

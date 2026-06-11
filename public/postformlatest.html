@@ -1,0 +1,349 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Region-Resolve</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f0f23, #1a1a2e, #16213e);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      min-height: 100vh;
+      color: #ffffff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position:100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .profile-card {
+      width: 100%;
+      max-width: 600px;
+      background: rgba(28, 28, 46, 0.95);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .profile-card h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #ffffff, #7877c6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    form { display: flex; flex-direction: column; gap: 1rem; }
+
+    input[type="text"], textarea {
+      width: 100%; padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(44,44,62,0.8);
+      color: white; transition: 0.3s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: #7877c6;
+      background: rgba(44,44,62,1);
+      outline: none;
+    }
+
+    textarea { resize: vertical; min-height: 100px; }
+
+    button {
+      padding: 0.8rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    #getLocationBtn { background: #17a2b8; }
+    #getLocationBtn:hover { background: #138496; }
+
+    button[type="submit"] { background: #7877c6; }
+    button[type="submit"]:hover { background: #6c63ff; }
+
+    .custom-alert {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(28, 28, 46, 0.95);
+      color: white; padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      z-index: 9999; opacity: 0;
+      transition: 0.3s; min-width: 250px; text-align: center;
+    }
+    .custom-alert.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+    .back-arrow {
+      position: fixed; top: 20px; left: 20px;
+      font-size: 24px; color: white;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 10px; border-radius: 50%;
+      text-decoration: none; transition: 0.3s;
+      z-index: 10000;
+    }
+    .back-arrow:hover { background: #ffda77; color: black; }
+
+    /* 🔥 FULL SCREEN LOADER */
+    #loadingOverlay {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.55);
+      display: none; justify-content: center;
+      align-items: center; z-index: 20000;
+    }
+    .loader {
+      width: 60px; height: 60px;
+      border: 6px solid #ffffff50;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Image Upload Styles */
+    .image-upload-container {
+      width: 100%;
+      padding: 1rem;
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(44,44,62,0.8);
+      text-align: center;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .image-upload-container:hover {
+      border-color: #7877c6;
+      background: rgba(44,44,62,1);
+    }
+    .image-upload-container input[type="file"] {
+      display: none;
+    }
+    .upload-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.9rem;
+    }
+    .image-preview {
+      margin-top: 1rem;
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<a href="javascript:void(0)" class="back-arrow" onclick="window.history.back();">
+  <i class="fa fa-arrow-left"></i>
+</a>
+
+<div class="profile-card">
+  <h2>Report a Local Problem</h2>
+
+  <form id="problemForm">
+
+    <label>Title:</label>
+    <input type="text" id="title" placeholder="ex:about street light" required>
+
+    <label>Description:</label>
+    <textarea id="description" placeholder="Explain the problem in detail..." required></textarea>
+
+    <label>District:</label>
+    <input type="text" id="district" placeholder="Enter District" required>
+
+    <label>Region:</label>
+    <input type="text" id="region" placeholder="Enter Region" required>
+
+    <label>Location :</label>
+    <button type="button" id="getLocationBtn">Share My Location</button>
+    <p id="locationDisplay"></p>
+
+    <a id="mapsLink" href="#" target="_blank"
+       style="color:#4ecdc4; font-size:0.9rem; display:none; margin-top:5px;">
+      View on Google Maps
+    </a>
+
+    <label>Upload Image (Optional):</label>
+    <div class="image-upload-container" onclick="document.getElementById('imageInput').click();">
+      <input type="file" id="imageInput" accept="image/*">
+      <div class="upload-label">
+        <i class="fa fa-cloud-upload" style="font-size:2rem; margin-bottom:0.5rem;"></i>
+        <p>Click to upload an image</p>
+      </div>
+      <img id="imagePreview" class="image-preview" alt="Preview">
+    </div>
+
+    <label class="checkbox-label">
+      <input type="checkbox" id="anonymous"> Post Anonymously
+    </label>
+
+    <button type="submit" id="submitBtn">Submit Problem</button>
+
+  </form>
+</div>
+
+<div id="customAlert" class="custom-alert"></div>
+
+<!-- 🔥 FULL SCREEN LOADING OVERLAY -->
+<div id="loadingOverlay"><div class="loader"></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+    authDomain: "major-project-d33e0.firebaseapp.com",
+    projectId: "major-project-d33e0",
+    storageBucket: "major-project-d33e0.firebasestorage.app",
+    messagingSenderId: "833100408662",
+    appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+    measurementId: "G-QYTJKF31RW"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  const IMGBB_API_KEY = "a3c6542b7d432f8687a8b5db4b7b7d6e";
+
+  function showAlert(msg) {
+    const box = document.getElementById("customAlert");
+    box.textContent = msg;
+    box.classList.add("show");
+    setTimeout(() => box.classList.remove("show"), 2500);
+  }
+
+  let userLocation = "";
+  let uploadedImageUrl = "";
+
+  // Image preview
+  document.getElementById("imageInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const preview = document.getElementById("imagePreview");
+        preview.src = event.target.result;
+        preview.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Upload image to ImgBB
+  async function uploadImageToImgBB(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      return data.data.url;
+    } else {
+      throw new Error("Image upload failed");
+    }
+  }
+
+  document.getElementById("getLocationBtn").addEventListener("click", () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        userLocation = `${lat}, ${lng}`;
+        document.getElementById("locationDisplay").innerText =
+          "Location Captured: " + userLocation;
+
+        const mapsLink = document.getElementById("mapsLink");
+        mapsLink.style.display = "block";
+        mapsLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+      },
+      () => showAlert("Unable to get location."));
+    }
+  });
+
+  document.getElementById("problemForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const user = auth.currentUser;
+    if (!user) return showAlert("Please login first!");
+
+    // 🔥 SHOW LOADER + DISABLE SUBMIT
+    document.getElementById("loadingOverlay").style.display = "flex";
+    document.getElementById("submitBtn").disabled = true;
+
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    const district = document.getElementById("district").value;
+    const region = document.getElementById("region").value;
+    const anonymous = document.getElementById("anonymous").checked;
+
+    // Upload image if selected
+    const imageFile = document.getElementById("imageInput").files[0];
+    if (imageFile) {
+      try {
+        uploadedImageUrl = await uploadImageToImgBB(imageFile);
+      } catch (error) {
+        showAlert("Image upload failed, but continuing...");
+        uploadedImageUrl = "";
+      }
+    }
+
+    await db.collection("posts").add({
+      title, description, district, region, anonymous,
+      location: userLocation,
+      imageUrl: uploadedImageUrl,
+      userId: user.uid,
+      createdAt: new Date().toISOString(),
+      status: "pending"
+    });
+
+    showAlert("Problem reported successfully!");
+
+    // RESET FORM
+    document.getElementById("problemForm").reset();
+    document.getElementById("locationDisplay").innerText = "";
+    document.getElementById("mapsLink").style.display = "none";
+    document.getElementById("imagePreview").style.display = "none";
+    userLocation = "";
+    uploadedImageUrl = "";
+
+    // 🔥 SMALL DELAY THEN REDIRECT
+    setTimeout(() => {
+      window.history.back();
+    }, 700);
+  });
+</script>
+
+</body>
+</html>

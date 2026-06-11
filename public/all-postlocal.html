@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Region-Resolve</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="allpost.css" />
+  <style>
+    .post-image {
+    width: 100%;
+  height: 100%;
+  object-fit: cover;   /* fills width + height */
+  border-radius: 8px;
+  display: block;
+      cursor:none;
+      
+    }
+    .description-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;   /* show only 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+}
+
+.read-more {
+  color: #2463ff;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0)" class="back-arrow" onclick="window.history.back();">
+    <i class="fa fa-arrow-left"></i>
+  </a>
+
+  <h2>All Reported Problems</h2>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search using district or region" />
+    <i class="fa fa-search"></i>
+  </div>
+
+  <div id="postsContainer" class="posts-container"></div>
+  <p id="noPostsMessage" class="no-posts" style="display:none;">No posts found</p>
+
+  <!-- Floating Icon Menu -->
+  <div class="floating-menu">
+    <a href="pendinglocal.html" class="floating-icon" data-tooltip="Pending posts">
+      <i class="fa fa-link"></i>
+    </a>
+    <a href="resolved.html" class="floating-icon" data-tooltip="Resolved posts">
+      <i class="fa fa-book"></i>
+    </a>
+  </div>
+  <div id="notification" class="notification"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD3wnvW8xLSiFXZ65GOcVQ40c5qeIsCHyw",
+    authDomain: "major-project-d33e0.firebaseapp.com",
+    projectId: "major-project-d33e0",
+    storageBucket: "major-project-d33e0.firebasestorage.app",
+    messagingSenderId: "833100408662",
+    appId: "1:833100408662:web:f294cddaee7840d31c58f7",
+    measurementId: "G-QYTJKF31RW"
+
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const postsContainer = document.getElementById("postsContainer");
+    const noPostsMessage = document.getElementById("noPostsMessage");
+    const searchInput = document.getElementById("searchInput");
+
+    let allPosts = [];
+
+    // Get initials for avatar
+    function getInitials(email) {
+      if (!email || email === "Anonymous User") return "A";
+      return email.charAt(0).toUpperCase();
+    }
+
+    // Get user email from Firestore
+    async function getUserEmail(userId) {
+      try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        return userDoc.exists ? userDoc.data().email : "user@example.com";
+      } catch {
+        return "user@example.com";
+      }
+    }
+
+    // Load posts
+    async function loadAllPosts() {
+      try {
+        const snapshot = await db.collection("posts").orderBy("createdAt", "desc").get();
+        if (snapshot.empty) {
+          noPostsMessage.style.display = "block";
+          return;
+        }
+
+        const postsWithEmails = await Promise.all(
+          snapshot.docs.map(async (doc) => {
+            const postData = doc.data();
+            let userEmail = postData.anonymous ? "Anonymous User" : await getUserEmail(postData.userId);
+            return { ...postData, userEmail, id: doc.id };
+          })
+        );
+
+        allPosts = postsWithEmails;
+        displayPosts(allPosts);
+      } catch {
+        noPostsMessage.textContent = "Error loading posts.";
+        noPostsMessage.style.display = "block";
+      }
+    }
+
+    // Display posts
+    function displayPosts(posts) {
+      postsContainer.innerHTML = "";
+      if (!posts.length) {
+        noPostsMessage.style.display = "block";
+        return;
+      }
+      noPostsMessage.style.display = "none";
+
+      posts.forEach((post) => {
+        const initials = getInitials(post.userEmail);
+        const card = document.createElement("div");
+        card.className = "post-card";
+        card.setAttribute("data-post-id", post.id);
+
+        const formatDate = (d) =>
+          new Date(d).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+        card.innerHTML = `
+          <div class="post-header">
+            <div class="post-title">
+              ${post.title || "Untitled Problem"}
+              ${post.anonymous ? '<span class="anonymous-badge">Anonymous</span>' : ""}
+            </div>
+            <div class="post-user-info">
+              <div class="user-avatar">${initials}</div>
+              <div class="post-email">${post.userEmail}</div>
+              <div class="post-date">${formatDate(post.createdAt)}</div>
+            </div>
+          </div>
+
+          <div class="post-location-info">
+            <div class="location-item"><div class="location-label">Region</div><div class="location-value">${post.region || "Not specified"}</div></div>
+            <div class="location-item"><div class="location-label">District</div><div class="location-value">${post.district || "Not specified"}</div></div>
+            <div class="location-item"><div class="location-label">Status</div><div class="location-value"><span class="post-status ${post.status === "resolved" ? "status-resolved" : "status-pending"}">${post.status || "pending"}</span></div></div>
+            ${post.location ? `
+  <div class="location-item">
+    <div class="location-label">Location</div>
+    <div class="location-value">
+      ${post.location}
+      <br>
+      <a href="https://www.google.com/maps?q=${post.location}"
+         target="_blank"
+         style="color:#4ecdc4; font-size:0.85rem; text-decoration:underline;">
+        View on Google Maps
+      </a>
+    </div>
+  </div>` : ""}
+
+          </div>
+
+          ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" alt="Problem Image" onclick="window.open('${post.imageUrl}', '_blank')">` : ""}
+
+          <div class="post-description">
+            <div class="description-label">Problem Description</div>
+          <div class="description-text" id="desc-${post.id}">
+  ${post.description || "No description provided"}
+</div>
+<span class="read-more" onclick="expandDescription('${post.id}')">Read more...</span>
+
+          </div>
+
+          <!-- Action Icons -->
+          <div class="post-actions">
+            <button class="action-btn reply-btn" title="Reply">💬</button>
+            <button class="action-btn share-btn" title="Share"><i class="fa fa-paper-plane"></i></button>
+
+            <!-- Share popup -->
+            <div class="share-popup">
+              <button class="share-option" data-platform="copy">
+                <i class="fa fa-link"></i><span>Copy link</span>
+              </button>
+              <button class="share-option" data-platform="facebook">
+                <i class="fab fa-facebook-f"></i><span>Facebook</span>
+              </button>
+              <button class="share-option" data-platform="gmail">
+                <i class="fab fa-envelope"></i><span>Gmail</span>
+              </button>
+              <button class="share-option" data-platform="whatsapp">
+                <i class="fab fa-whatsapp"></i><span>WhatsApp</span>
+              </button>
+              <button class="share-option" data-platform="instagram">
+  <i class="fa-brands fa-instagram"></i><span>Instagram</span>
+</button>
+
+              <button class="share-option" data-platform="close">
+                <i class="fa fa-xmark"></i><span>Close</span>
+              </button>
+            </div>
+          </div>
+        `;
+        postsContainer.appendChild(card);
+      });
+    }
+
+    // Search posts
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.toLowerCase();
+      displayPosts(
+        allPosts.filter(
+          (p) =>
+            (p.district || "").toLowerCase().includes(q) ||
+            (p.region || "").toLowerCase().includes(q)
+        )
+      );
+    });
+
+    loadAllPosts();
+
+    // Toggle share popup
+    postsContainer.addEventListener("click", async (e) => {
+      const shareBtn = e.target.closest(".share-btn");
+      if (shareBtn) {
+        const postActions = shareBtn.closest(".post-actions");
+        const popup = postActions.querySelector(".share-popup");
+        popup.style.display = popup.style.display === "flex" ? "none" : "flex";
+      }
+
+      const shareOption = e.target.closest(".share-option");
+      if (shareOption) {
+        const postCard = e.target.closest(".post-card");
+        const postId = postCard.getAttribute("data-post-id");
+        const postUrl = `${window.location.origin}/post.html?id=${postId}`;
+
+        // Extract details
+        const title = postCard.querySelector(".post-title").innerText;
+        const region = postCard.querySelector(".location-item .location-value").innerText;
+        const description = postCard.querySelector(".description-text").innerText;
+
+        const platform = shareOption.getAttribute("data-platform");
+
+        if (platform === "whatsapp") {
+          // WhatsApp share with more details
+          const message = `📢 Problem Report\n\n📝 Title: ${title}\n📍 Region: ${region}\n📄 Description: ${description}\n🔗 View more: ${postUrl}`;
+          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+
+        } else if (platform === "facebook") {
+          // Facebook share (can only pass link, but add text in query)
+          const message = `${title}\n\n${description}\n\nSee details: ${postUrl}`;
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}&quote=${encodeURIComponent(message)}`, "_blank");
+
+        } else if (platform === "gmail") {
+          // Gmail compose with subject + body
+          const subject = `Problem Report: ${title}`;
+          const body = `📢 Problem Report\n\n📝 Title: ${title}\n📍 Region: ${region}\n📄 Description: ${description}\n\n🔗 View more: ${postUrl}`;
+          window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
+
+        } else if (platform === "instagram") {
+  // Instagram - direct text+link is not supported via web
+  // So we just open Instagram homepage with the post link
+  window.open(`https://www.instagram.com/?url=${encodeURIComponent(postUrl)}`, "_blank");
+}
+
+        else if (platform === "copy") {
+          navigator.clipboard.writeText(postUrl).then(() => showNotification("Link copied to clipboard!"));
+        } else if (platform === "close") {
+          shareOption.closest(".share-popup").style.display = "none";
+          return;
+        }
+
+        if (platform !== "copy") {
+          shareOption.closest(".share-popup").style.display = "none";
+        }
+      }
+    });
+
+    // Handle Reply button
+    postsContainer.addEventListener("click", (e) => {
+      const replyBtn = e.target.closest(".reply-btn");
+      if (replyBtn) {
+        const postCard = replyBtn.closest(".post-card");
+        const postId = postCard.getAttribute("data-post-id");
+        window.location.href = `replylocal.html?id=${postId}`;
+      }
+    });
+
+    function showNotification(message) {
+      const notification = document.getElementById("notification");
+      notification.textContent = message;
+      notification.style.display = "block";
+      notification.classList.add("show");
+      setTimeout(() => {
+        notification.classList.remove("show");
+        setTimeout(() => (notification.style.display = "none"), 300);
+      }, 2000);
+    }
+
+function expandDescription(id) {
+  const desc = document.getElementById("desc-" + id);
+  const btn = event.target;
+
+  if (btn.innerText === "Read more...") {
+    desc.style.webkitLineClamp = "unset";
+    desc.style.maxHeight = "none";
+    btn.innerText = "Show less";
+  } else {
+    desc.style.webkitLineClamp = "2";
+    btn.innerText = "Read more...";
+  }
+}
+
+
+  </script>
+</body>
+</html>
